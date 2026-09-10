@@ -1118,27 +1118,57 @@ if (window.PointerEvent) {
 }
 </script>
 <script>
+/* ---------- auto TOC + goto navigation (mobile-safe) ---------- */
 (function(){
+  var USE_SMOOTH = true;   /* αν ακόμα κολλάει στο κινητό, βάλε false */
+
+  /* --- build the TOC from data-title attributes --- */
   var holder = document.getElementById("tocAuto");
-  if (!holder) return;
-  var secs = document.querySelectorAll("section.page");
-  var tbl = document.createElement("table");
-  for (var i = 0; i < secs.length; i++) {
-    var name = secs[i].getAttribute("data-title");
-    if (!name) continue;
-    var tr  = document.createElement("tr");
-    var td1 = document.createElement("td");
-    td1.setAttribute("data-goto", i);
-    td1.textContent = (i + 1) + ". " + name;
-    var td2 = document.createElement("td");
-    td2.className = "gr";
-    td2.textContent = "→";
-    td2.setAttribute("data-goto", i);            /* whole row tappable */
-    tr.appendChild(td1); tr.appendChild(td2);
-    tbl.appendChild(tr);
+  if (holder) {
+    var secs = document.querySelectorAll("section.page");
+    var tbl  = document.createElement("table");
+    for (var i = 0; i < secs.length; i++) {
+      var name = secs[i].getAttribute("data-title");
+      if (!name) continue;
+      var tr  = document.createElement("tr");
+      var td1 = document.createElement("td");
+      td1.setAttribute("data-goto", i);
+      td1.textContent = (i + 1) + ". " + name;
+      var td2 = document.createElement("td");
+      td2.className = "gr";
+      td2.textContent = "→";
+      td2.setAttribute("data-goto", i);            /* whole row tappable */
+      tr.appendChild(td1); tr.appendChild(td2);
+      tbl.appendChild(tr);
+    }
+    holder.appendChild(tbl);
   }
-  secs[0].querySelector ? secs[0] : null;        /* noop */
-  document.getElementById("tocAuto").appendChild(tbl);
+
+  /* --- navigation: scroll to page element, disarming snap during smooth scroll --- */
+  function goToPage(i){
+    var pager = document.getElementById("pager");
+    if (!pager) return;
+    var pages = pager.querySelectorAll(".page");
+    i = Math.max(0, Math.min(pages.length - 1, i));
+    var target = pages[i];
+    if (!target) return;
+
+    if (USE_SMOOTH) {
+      pager.style.scrollSnapType = "none";        /* snap can't cancel our scroll */
+      pager.scrollTo({ left: target.offsetLeft, behavior: "smooth" });
+      setTimeout(function(){ pager.style.scrollSnapType = "x mandatory"; }, 600);
+    } else {
+      pager.scrollLeft = target.offsetLeft;       /* instant fallback, bulletproof */
+    }
+  }
+  window.goToPage = goToPage;
+
+  /* --- one click handler for TOC rows AND cross-links everywhere --- */
+  document.addEventListener("click", function(e){
+    var t = e.target.closest("[data-goto]");
+    if (!t) return;
+    goToPage(parseInt(t.getAttribute("data-goto"), 10));
+  });
 })();
 </script>
 
