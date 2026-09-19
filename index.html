@@ -98,6 +98,18 @@ html, body, button, select, input, .tok { touch-action: manipulation; }
   input.freetext { font-family:inherit; font-size:16px; border:none; border-bottom:1.5px solid #999; padding:6px 2px; width:100%; max-width:380px; background:transparent; }
   .spk { background:none; border:none; font-size:20px; cursor:pointer; padding:0 8px 0 0; vertical-align:middle; }
 
+  /* ---------- TOC styles ---------- */
+  #tocAuto { margin-top: 10px; }
+  #tocAuto .toc-table { width: 100%; border-collapse: collapse; }
+  #tocAuto td { padding: 0; border: 1px solid #c9c2e8; background: #f4f1fc; }
+  #tocAuto .toc-button {
+    display: block; width: 100%; padding: 12px 14px; border: 0; background: transparent;
+    color: #5b21b6; font: bold 16px Georgia, serif; text-align: left; cursor: pointer;
+  }
+  #tocAuto .toc-button:hover, #tocAuto .toc-button:focus {
+    background: #e9e1ff; outline: 2px solid #5b21b6; outline-offset: -2px;
+  }
+
   /* ---------- ONE mobile breakpoint: tables become stacked cards ---------- */
   @media (max-width: 600px) {
     body { font-size: 19px; }
@@ -191,5 +203,7 @@ details.tr summary { font-weight:normal; font-size:15px; color:#666; }
 </section>
 
 </main>
+
+<script src="toc-fix.js"></script>
 </body>
 </html>
