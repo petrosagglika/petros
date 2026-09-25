@@ -132,16 +132,24 @@ const N={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00};
 /* one entry per μέρος, parallel to chantLines[].letters
    [frequency, beats] — last note of each phrase is held (2 beats) */
 const melodies=[
+  // Μέρος 1 — A B C D E F G : "Twin-kle twin-kle lit-tle star"
   [[N.C,1],[N.C,1],[N.G,1],[N.G,1],[N.A,1],[N.A,1],[N.G,2]],
-  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],[N.D,1],[N.D,1],[N.C,2],[N.G,1],[N.G,1]],
-  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],[N.D,2],[N.G,1],[N.G,1],[N.F,1],[N.F,1],[N.E,2]]
+
+  // Μέρος 2 — H I J K | L M N O P : "How I won-der | what you are, up a-"
+  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
+   [N.D,1],[N.D,1],[N.C,1],[N.G,1],[N.G,1]],
+
+  // Μέρος 3 — Q R S T U V | W X Y Z : "How I won-der what you are | up a-bove..."
+  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
+   [N.D,1],[N.D,2],
+   [N.G,1],[N.G,1],[N.F,1],[N.E,2]]
 ];
 const melodyEnabled=()=>{const c=document.querySelector('#melodyOn');return c&&c.checked};
 /* ---------- 6. Alphabet chant (3 parts) ---------- */
 const chantLines=[
   {title:'Μέρος 1', letters:['A','B','C','D','E','F','G']},
-  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P']},
-  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5}
+  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P'], breath:3},  // παύση μετά το K
+  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5} // παύση μετά το V
 ];
 
 function speakNow(text,rate,pitch){
@@ -217,7 +225,7 @@ function playLine(li,token,done){
 
     const long=name.length>=5;                     // "aitch","double you"
     const minGap=long?beat()*1.2:0;                // give the voice time
-    const gap=Math.max(beat()*beats,minGap)*(line.breath===i?1.8:1);
+    const gap=Math.max(beat()*beats,minGap)*(line.breath===i?1.4:1);
 
     i++;
     chantTimer=setTimeout(step,gap);
