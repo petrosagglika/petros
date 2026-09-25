@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Alphabet — Αγγλικό αλφάβητο</title>
 <style>
+.letter{cursor:pointer}
+.letter:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 :root{--purple:#5b21b6;--blue:#2563eb;--teal:#0d9488;--pink:#db2777;--bg:#faf9fd}
 *{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin-inline:auto;background:var(--bg);color:#222;font:18px/1.55 Georgia,serif}h1{color:var(--purple);text-align:center}h2{color:#fff;background:var(--purple);padding:8px 12px;border-radius:7px;margin-top:28px}.gr{color:#777;font-style:italic}.intro{background:#ece7fa;padding:12px;border-radius:8px}.alphabet{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:14px 0}.letter{background:#fff;border:1px solid #c9c2e8;border-radius:8px;padding:10px;text-align:left;cursor:pointer}.letter:hover,.letter:focus{background:#f0ebff;border-color:var(--purple)}.letter strong{display:block;color:var(--purple);font-size:28px;line-height:1}.letter small{display:block;color:#555}.speak{float:right;border:0;background:var(--purple);color:#fff;border-radius:50%;width:34px;height:34px;padding:0;cursor:pointer}.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.wordcard{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px}.wordcard b{color:var(--blue)}table{border-collapse:collapse;width:100%;margin:12px 0;background:#fff}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f2fb}.exbox{background:#fff;border:1px solid #e2ddf2;border-radius:8px;padding:14px;margin:14px 0}select,input{font:inherit;padding:6px;border:1px solid #9792c4;border-radius:6px;max-width:100%}button.action{background:var(--purple);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}.feedback{font-weight:bold;margin-left:8px}.ok{color:#15803d}.no{color:#b91c1c}.listen-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}@media(max-width:600px){body{font-size:19px;padding:14px}th,td{font-size:16px}.letter{min-height:88px}}
 </style>
@@ -45,7 +47,26 @@
 const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const words=[['A','apple','μήλο'],['B','builder','κτίστης'],['C','cement','τσιμέντο'],['D','door','πόρτα'],['E','evening','βράδυ'],['F','flower','λουλούδι'],['G','garden','κήπος'],['H','hammer','σφυρί'],['I','inside','μέσα'],['J','job','δουλειά'],['K','key','κλειδί'],['L','ladder','σκάλα'],['M','more','περισσότερο'],['N','nail','καρφί'],['O','old','παλιός'],['P','paint','βάφω/χρώμα'],['Q','question','ερώτηση'],['R','rake','τσουγκράνα'],['S','shovel','φτυάρι'],['T','tree','δέντρο'],['U','under','κάτω από'],['V','van','βαν'],['W','work','δουλειά'],['X','box','κουτί'],['Y','you','εσύ'],['Z','zero','μηδέν']];
 function speak(text){if(!('speechSynthesis' in window)){alert('Η φωνή δεν είναι διαθέσιμη σε αυτό το browser.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.72;speechSynthesis.speak(u)}
-const alphabet=document.querySelector('#alphabet');letters.forEach(l=>{const b=document.createElement('button');b.className='letter';b.innerHTML='<strong>'+l+' '+l.toLowerCase()+'</strong><small>Listen to '+l+'</small><button class="speak" aria-label="Listen to '+l+'">🔊</button>';b.addEventListener('click',e=>{if(e.target.classList.contains('speak'))e.stopPropagation();speak(l)});alphabet.appendChild(b)});
+const letterNames={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',
+I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',
+S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
+function speakLetter(l){speak(letterNames[l])}
+const alphabet=document.querySelector('#alphabet');
+letters.forEach(l=>{
+  const d=document.createElement('div');
+  d.className='letter';
+  d.tabIndex=0;
+  d.setAttribute('role','button');
+  d.setAttribute('aria-label','Listen to '+l);
+  d.innerHTML='<strong>'+l+' '+l.toLowerCase()+'</strong>'+
+              '<small>Listen to '+l+'</small>'+
+              '<button class="speak" aria-label="Listen to '+l+'">🔊</button>';
+  d.addEventListener('click',()=>speakLetter(l));
+  d.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();speakLetter(l)}
+  });
+  alphabet.appendChild(d);
+});
 const cards=document.querySelector('#wordCards');words.forEach(([l,w,g])=>{const d=document.createElement('div');d.className='wordcard';d.innerHTML='<b>'+l+' '+l.toLowerCase()+'</b> — '+w+'<br><span class="gr">'+g+'</span> <button class="speak" aria-label="Listen to '+w+'">🔊</button>';d.querySelector('button').onclick=()=>speak(w);cards.appendChild(d)});
 function fillSelect(sel,items){items.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;sel.appendChild(o)})}
 fillSelect(document.querySelector('#letterAnswer'),letters);fillSelect(document.querySelector('#initialAnswer'),letters);
