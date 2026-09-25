@@ -7,6 +7,17 @@
 <style>
 .letter{cursor:pointer}
 .letter:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+/* --- 6. Alphabet chant --- */
+.chantline{background:#fff;border:1px solid #e2ddf2;border-radius:8px;padding:10px 12px;margin:10px 0}
+.chanthead{display:flex;align-items:center;gap:10px;color:var(--purple);font-weight:bold;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:40px;padding:0 6px;
+      border-radius:8px;background:#f0ebff;color:var(--purple);font-weight:bold;font-size:21px;
+      cursor:pointer;user-select:none;transition:transform .12s,background .12s,color .12s}
+.chip.gap{margin-right:16px}          /* η παύση μετά το V */
+.chip.on{background:var(--pink);color:#fff;transform:scale(1.2)}
+.chip:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+button.action.small{padding:4px 10px;font-size:15px;line-height:1}
 :root{--purple:#5b21b6;--blue:#2563eb;--teal:#0d9488;--pink:#db2777;--bg:#faf9fd}
 *{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin-inline:auto;background:var(--bg);color:#222;font:18px/1.55 Georgia,serif}h1{color:var(--purple);text-align:center}h2{color:#fff;background:var(--purple);padding:8px 12px;border-radius:7px;margin-top:28px}.gr{color:#777;font-style:italic}.intro{background:#ece7fa;padding:12px;border-radius:8px}.alphabet{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:14px 0}.letter{background:#fff;border:1px solid #c9c2e8;border-radius:8px;padding:10px;text-align:left;cursor:pointer}.letter:hover,.letter:focus{background:#f0ebff;border-color:var(--purple)}.letter strong{display:block;color:var(--purple);font-size:28px;line-height:1}.letter small{display:block;color:#555}.speak{float:right;border:0;background:var(--purple);color:#fff;border-radius:50%;width:34px;height:34px;padding:0;cursor:pointer}.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.wordcard{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px}.wordcard b{color:var(--blue)}table{border-collapse:collapse;width:100%;margin:12px 0;background:#fff}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f2fb}.exbox{background:#fff;border:1px solid #e2ddf2;border-radius:8px;padding:14px;margin:14px 0}select,input{font:inherit;padding:6px;border:1px solid #9792c4;border-radius:6px;max-width:100%}button.action{background:var(--purple);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}.feedback{font-weight:bold;margin-left:8px}.ok{color:#15803d}.no{color:#b91c1c}.listen-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}@media(max-width:600px){body{font-size:19px;padding:14px}th,td{font-size:16px}.letter{min-height:88px}}
 </style>
@@ -41,6 +52,19 @@
   <p>Άκου τη λέξη και γράψε την:</p>
   <p><button class="action" id="listenSpelling">🔊 Listen</button> <input id="spellingInput" autocomplete="off" placeholder="type the word"><button class="action" id="checkSpelling">Check</button><span id="spellingFeedback" class="feedback"></span></p>
   <p class="gr">Παραδείγματα: garden, hammer, shovel, work.</p>
+</div>
+
+<h2>6. Το τραγούδι — The alphabet chant</h2>
+<div class="exbox">
+  <p>Το αλφάβητο τραγουδιέται σε <b>τρία μέρη</b>. Πάτα ▶️ και τραγούδα μαζί.
+     Ο σκοπός είναι του <i>Twinkle, Twinkle, Little Star</i>.</p>
+  <div id="chantLines"></div>
+  <p class="listen-line">
+    <button class="action" id="chantAll">▶️ Και τα τρία μέρη</button>
+    <button class="action" id="chantStop">⏹ Στοπ</button>
+    <label class="gr">Ταχύτητα <input type="range" id="chantRate" min="0.5" max="1.2" step="0.05" value="0.85"></label>
+  </p>
+  <p class="gr">Πάτα ένα γράμμα για να το ακούσεις μόνο του.</p>
 </div>
 
 <script>
@@ -78,6 +102,94 @@ document.querySelector('#listenLetter').onclick=()=>speak(letterRound);document.
 document.querySelector('#listenWord').onclick=()=>speak(wordRound[1]);document.querySelector('#newWord').onclick=newWord;document.querySelector('#checkInitial').onclick=()=>feedback('#initialFeedback',document.querySelector('#initialAnswer').value===wordRound[0]);
 let spellingRound;function newSpelling(){spellingRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#spellingInput').value='';document.querySelector('#spellingFeedback').textContent=''}document.querySelector('#listenSpelling').onclick=()=>speak(spellingRound[1]);document.querySelector('#checkSpelling').onclick=()=>feedback('#spellingFeedback',document.querySelector('#spellingInput').value.trim().toLowerCase()===spellingRound[1]);
 newLetter();newWord();newSpelling();
+/* ---------- 6. Alphabet chant (3 parts) ---------- */
+const chantLines=[
+  {title:'Μέρος 1', letters:['A','B','C','D','E','F','G']},
+  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P']},
+  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5}
+];
+
+function speakNow(text,rate,pitch){
+  if(!('speechSynthesis' in window)) return;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US'; u.rate=rate; u.pitch=pitch||1;
+  speechSynthesis.speak(u);
+}
+function flash(el){el.classList.add('on');setTimeout(()=>el.classList.remove('on'),600)}
+
+/* build the three cards */
+const chantWrap=document.querySelector('#chantLines');
+chantLines.forEach((line,li)=>{
+  const card=document.createElement('div'); card.className='chantline';
+
+  const head=document.createElement('div'); head.className='chanthead';
+  head.innerHTML='<span>'+line.title+' — '+line.letters.length+' γράμματα</span>';
+  const pb=document.createElement('button');
+  pb.className='action small'; pb.textContent='▶️';
+  pb.setAttribute('aria-label','Play '+line.title);
+  pb.onclick=()=>{stopChant(); playLines([li]);};
+  head.appendChild(pb);
+
+  const chips=document.createElement('div'); chips.className='chips';
+  line.letters.forEach((L,i)=>{
+    const c=document.createElement('span');
+    c.className='chip'+(i===line.breath?' gap':'');
+    c.dataset.line=li; c.dataset.i=i; c.textContent=L;
+    c.tabIndex=0; c.setAttribute('role','button');
+    c.setAttribute('aria-label','Listen to '+L);
+    c.onclick=()=>{stopChant(); flash(c); speakLetter(L);};
+    c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault(); c.click();}};
+    chips.appendChild(c);
+  });
+
+  card.appendChild(head); card.appendChild(chips);
+  chantWrap.appendChild(card);
+});
+
+/* player */
+let chantToken=0, chantTimer=null;
+const chantRate=()=>parseFloat(document.querySelector('#chantRate').value)||0.85;
+const beat=()=>720/chantRate();          // ms per γράμμα
+
+function stopChant(){
+  chantToken++;
+  clearTimeout(chantTimer);
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+}
+function highlight(li,i){
+  document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+  const c=document.querySelector('.chip[data-line="'+li+'"][data-i="'+i+'"]');
+  if(c) c.classList.add('on');
+}
+function playLine(li,token,done){
+  const line=chantLines[li];
+  let i=0;
+  (function step(){
+    if(token!==chantToken) return;
+    if(i>=line.letters.length){                       // τέλος γραμμής → ανάσα
+      chantTimer=setTimeout(()=>{if(token===chantToken&&done) done();}, beat()*1.6);
+      return;
+    }
+    const L=line.letters[i], name=letterNames[L];
+    highlight(li,i);
+    speakNow(name, chantRate(), 1.15);
+    const long=name.length>=5;                        // "aitch", "double you"
+    const gap=(line.breath===i?beat()*1.8:beat())*(long?1.8:1);
+    i++;
+    chantTimer=setTimeout(step,gap);
+  })();
+}
+function playLines(list){
+  const token=chantToken;                             // μετά το stopChant()
+  let n=0;
+  (function nextLine(){
+    if(token!==chantToken||n>=list.length) return;
+    playLine(list[n++],token,nextLine);
+  })();
+}
+document.querySelector('#chantAll').onclick=()=>{stopChant(); playLines([0,1,2]);};
+document.querySelector('#chantStop').onclick=stopChant;
 </script>
 </body>
 </html>
