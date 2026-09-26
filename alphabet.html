@@ -142,7 +142,7 @@ document.querySelectorAll("p.sent").forEach(function(p){
 const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const words=[['A','apple','μήλο'],['B','builder','κτίστης'],['C','cement','τσιμέντο'],['D','door','πόρτα'],['E','evening','βράδυ'],['F','flower','λουλούδι'],['G','garden','κήπος'],['H','hammer','σφυρί'],['I','inside','μέσα'],['J','job','δουλειά'],['K','key','κλειδί'],['L','ladder','σκάλα'],['M','more','περισσότερο'],['N','nail','καρφί'],['O','old','παλιός'],['P','paint','βάφω/χρώμα'],['Q','question','ερώτηση'],['R','rake','τσουγκράνα'],['S','shovel','φτυάρι'],['T','tree','δέντρο'],['U','under','κάτω από'],['V','van','βαν'],['W','work','δουλειά'],['X','box','κουτί'],['Y','you','εσύ'],['Z','zero','μηδέν']];
 function speak(text){if(!('speechSynthesis' in window)){alert('Η φωνή δεν είναι διαθέσιμη σε αυτό το browser.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.72;speechSynthesis.speak(u)}
-const letterNames={A:'ey',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',
+const letterNames={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',
 I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',
 S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
 function speakLetter(l){speak(letterNames[l])}
