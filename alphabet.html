@@ -241,6 +241,23 @@ function playLines(list){
 }
 document.querySelector('#chantAll').onclick=()=>{stopChant(); playLines([0,1,2]);};
 document.querySelector('#chantStop').onclick=stopChant;
+function fillVoicePicker(){
+  var sel = document.getElementById("voiceSel");
+  if (!sel || !VOICES.length) return;
+  sel.innerHTML = "";
+  VOICES.forEach(function(v){
+    var o = document.createElement("option");
+    o.value = v.name;
+    o.textContent = v.name + " (" + v.lang + ")";
+    sel.appendChild(o);
+  });
+  if (CHOSEN) sel.value = CHOSEN;
+}
+
+function pickVoice(name){
+  CHOSEN = name || null;
+  try { if (name) localStorage.setItem("lumo-voice", name); } catch(e) {}
+}
 </script>
 </body>
 </html>
