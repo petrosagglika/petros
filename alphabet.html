@@ -50,7 +50,7 @@ label.mel{display:inline-flex;align-items:center;gap:4px;color:var(--purple);fon
   </p>
   <p class="gr">Πάτα ένα γράμμα για να το ακούσεις μόνο του.</p>
 </div>
-      
+
 <h2>3. Γράμμα και λέξη — Letter and word</h2>
 <div id="wordCards" class="cardgrid"></div>
 
@@ -76,46 +76,84 @@ label.mel{display:inline-flex;align-items:center;gap:4px;color:var(--purple);fon
 </div>
 
 <script>
+/* =====================================================================
+   VOICE SYSTEM  (single source of truth)
+   ===================================================================== */
 var VOICES = [];            // available English voices
-var CHOSEN = null;          // user-selected voice (persisted)
+var CHOSEN = null;          // user-selected voice name (persisted)
 
 function loadVoices(){
   if (!window.speechSynthesis) return;
   VOICES = speechSynthesis.getVoices().filter(function(v){
     return /^en([-_]|$)/i.test(v.lang);           // all English voices
   });
-  try { CHOSEN = localStorage.getItem("lumo-voice"); } catch(e) {}
-  if (CHOSEN && !VOICES.some(function(v){ return v.name === CHOSEN; })) CHOSEN = null;
+  try {
+    var saved = localStorage.getItem("lumo-voice");
+    if (saved) CHOSEN = saved;
+  } catch(e) {}
+  // drop a saved voice that no longer exists
+  if (CHOSEN && VOICES.length && !VOICES.some(function(v){ return v.name === CHOSEN; })) CHOSEN = null;
 }
 
-/* speak: pick voice each time (voice list may arrive late on iOS) */
-function speak(text){
-  if (!window.speechSynthesis || !text) return;
-  text = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "");
-  if (!text) return;
-  speechSynthesis.cancel();
+/* called from the <select onchange="pickVoice(this.value)"> */
+function pickVoice(name){
+  CHOSEN = name || null;
+  try {
+    if (name) localStorage.setItem("lumo-voice", name);
+    else localStorage.removeItem("lumo-voice");
+  } catch(e) {}
+  // small confirmation so the user hears the new voice immediately
+  speak("Hello", 0.85);
+}
 
+/* resolve the SpeechSynthesisVoice object for CHOSEN (or a good default) */
+function getVoice(){
   var voices = VOICES.length ? VOICES : (loadVoices(), VOICES);
-  var chosen = null;
+  if (!voices.length) return null;
 
   if (CHOSEN) {
-    voices.forEach(function(v){ if (v.name === CHOSEN) chosen = v; });
-  }
-  if (!chosen) {
-    /* preference order: natural-quality voices first */
-    var prefs = [/Google UK English Female/i, /Google US English/i, /Premium/i, /Enhanced/i,
-                 /Siri/i, /Samantha/i, /Karen/i, /Moira/i, /Daniel/i];
-    for (var i = 0; i < prefs.length && !chosen; i++) {
-      voices.forEach(function(v){ if (!chosen && v.name.match(prefs[i])) chosen = v; });
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].name === CHOSEN) return voices[i];
     }
-    if (!chosen) chosen = voices.find(function(v){ return v.lang.toLowerCase() === "en-us"; }) || voices[0];
   }
+  /* preference order: natural-quality voices first */
+  var prefs = [/Google UK English Female/i, /Google US English/i, /Premium/i, /Enhanced/i,
+               /Siri/i, /Samantha/i, /Karen/i, /Moira/i, /Daniel/i];
+  for (var p = 0; p < prefs.length; p++) {
+    for (var j = 0; j < voices.length; j++) {
+      if (prefs[p].test(voices[j].name)) return voices[j];
+    }
+  }
+  for (var k = 0; k < voices.length; k++) {
+    if (voices[k].lang.toLowerCase() === "en-us") return voices[k];
+  }
+  return voices[0];
+}
 
+/* build an utterance that always carries the chosen voice */
+function makeUtterance(text, rate, pitch){
   var u = new SpeechSynthesisUtterance(text);
-  if (chosen) u.voice = chosen;
-  u.lang = chosen ? chosen.lang : "en-US";
-  u.rate = 0.85;
-  speechSynthesis.speak(u);
+  var v = getVoice();
+  if (v) { u.voice = v; u.lang = v.lang; }
+  else   { u.lang = "en-US"; }
+  u.rate  = (rate  || 0.85);
+  u.pitch = (pitch || 1);
+  return u;
+}
+
+/* normal speak: cancels whatever is playing */
+function speak(text, rate, pitch){
+  if (!window.speechSynthesis || !text) return;
+  text = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "");
+  if (!text.trim()) return;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(makeUtterance(text, rate, pitch));
+}
+
+/* queued speak: does NOT cancel (used by the chant) */
+function speakNow(text, rate, pitch){
+  if (!window.speechSynthesis || !text) return;
+  speechSynthesis.speak(makeUtterance(text, rate, pitch));
 }
 
 /* voices load asynchronously in Safari — listen for them */
@@ -124,7 +162,22 @@ if (window.speechSynthesis) {
   loadVoices();
   fillVoicePicker();   // in case the list was already loaded
 }
-/* 🔊 buttons on every example sentence (skips the Greek line and the button itself) */
+
+function fillVoicePicker(){
+  var sel = document.getElementById("voiceSel");
+  if (!sel || !VOICES.length) return;
+  sel.innerHTML = "";
+  VOICES.forEach(function(v){
+    var o = document.createElement("option");
+    o.value = v.name;
+    o.textContent = v.name + " (" + v.lang + ")";
+    sel.appendChild(o);
+  });
+  if (CHOSEN) sel.value = CHOSEN;
+  else if (getVoice()) { CHOSEN = getVoice().name; sel.value = CHOSEN; }
+}
+
+/* 🔊 buttons on every example sentence */
 document.querySelectorAll("p.sent").forEach(function(p){
   var b = document.createElement("button");
   b.type = "button";
@@ -134,18 +187,24 @@ document.querySelectorAll("p.sent").forEach(function(p){
   b.addEventListener("click", function(){
     var clone = p.cloneNode(true);
     clone.querySelectorAll(".gr").forEach(function(g){ g.remove(); });
-    clone.querySelectorAll(".spk").forEach(function(s){ s.remove(); });   /* <-- NEW: strip the speaker button */
+    clone.querySelectorAll(".spk").forEach(function(s){ s.remove(); });
     speak(clone.textContent.replace(/^\s*\d+\./, "").replace(/\s+/g, " ").trim());
   });
   p.insertBefore(b, p.firstChild);
 });
+
+/* =====================================================================
+   LETTERS / WORDS
+   ===================================================================== */
 const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const words=[['A','apple','μήλο'],['B','builder','κτίστης'],['C','cement','τσιμέντο'],['D','door','πόρτα'],['E','evening','βράδυ'],['F','flower','λουλούδι'],['G','garden','κήπος'],['H','hammer','σφυρί'],['I','inside','μέσα'],['J','job','δουλειά'],['K','key','κλειδί'],['L','ladder','σκάλα'],['M','more','περισσότερο'],['N','nail','καρφί'],['O','old','παλιός'],['P','paint','βάφω/χρώμα'],['Q','question','ερώτηση'],['R','rake','τσουγκράνα'],['S','shovel','φτυάρι'],['T','tree','δέντρο'],['U','under','κάτω από'],['V','van','βαν'],['W','work','δουλειά'],['X','box','κουτί'],['Y','you','εσύ'],['Z','zero','μηδέν']];
-function speak(text){if(!('speechSynthesis' in window)){alert('Η φωνή δεν είναι διαθέσιμη σε αυτό το browser.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.72;speechSynthesis.speak(u)}
+
 const letterNames={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',
 I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',
 S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
-function speakLetter(l){speak(letterNames[l])}
+
+function speakLetter(l){ speak(letterNames[l], 0.75); }
+
 const alphabet=document.querySelector('#alphabet');
 letters.forEach(l=>{
   const d=document.createElement('div');
@@ -162,17 +221,38 @@ letters.forEach(l=>{
   });
   alphabet.appendChild(d);
 });
-const cards=document.querySelector('#wordCards');words.forEach(([l,w,g])=>{const d=document.createElement('div');d.className='wordcard';d.innerHTML='<b>'+l+' '+l.toLowerCase()+'</b> — '+w+'<br><span class="gr">'+g+'</span> <button class="speak" aria-label="Listen to '+w+'">🔊</button>';d.querySelector('button').onclick=()=>speak(w);cards.appendChild(d)});
+
+const cards=document.querySelector('#wordCards');
+words.forEach(([l,w,g])=>{
+  const d=document.createElement('div');
+  d.className='wordcard';
+  d.innerHTML='<b>'+l+' '+l.toLowerCase()+'</b> — '+w+'<br><span class="gr">'+g+'</span> <button class="speak" aria-label="Listen to '+w+'">🔊</button>';
+  d.querySelector('button').onclick=()=>speak(w, 0.8);
+  cards.appendChild(d);
+});
+
 function fillSelect(sel,items){items.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;sel.appendChild(o)})}
-fillSelect(document.querySelector('#letterAnswer'),letters);fillSelect(document.querySelector('#initialAnswer'),letters);
+fillSelect(document.querySelector('#letterAnswer'),letters);
+fillSelect(document.querySelector('#initialAnswer'),letters);
+
 let letterRound,wordRound;
 function newLetter(){letterRound=letters[Math.floor(Math.random()*letters.length)];document.querySelector('#letterAnswer').value='';document.querySelector('#letterFeedback').textContent=''}
 function newWord(){wordRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#targetWord').textContent=wordRound[1];document.querySelector('#initialAnswer').value='';document.querySelector('#initialFeedback').textContent=''}
 function feedback(id,ok){const e=document.querySelector(id);e.textContent=ok?'✓ Μπράβο!':'✗ Ξαναπροσπάθησε.';e.className='feedback '+(ok?'ok':'no')}
-document.querySelector('#listenLetter').onclick=()=>speak(letterRound);document.querySelector('#checkLetter').onclick=()=>feedback('#letterFeedback',document.querySelector('#letterAnswer').value===letterRound);
-document.querySelector('#listenWord').onclick=()=>speak(wordRound[1]);document.querySelector('#newWord').onclick=newWord;document.querySelector('#checkInitial').onclick=()=>feedback('#initialFeedback',document.querySelector('#initialAnswer').value===wordRound[0]);
-let spellingRound;function newSpelling(){spellingRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#spellingInput').value='';document.querySelector('#spellingFeedback').textContent=''}document.querySelector('#listenSpelling').onclick=()=>speak(spellingRound[1]);document.querySelector('#checkSpelling').onclick=()=>feedback('#spellingFeedback',document.querySelector('#spellingInput').value.trim().toLowerCase()===spellingRound[1]);
+
+document.querySelector('#listenLetter').onclick=()=>speak(letterNames[letterRound], 0.75);
+document.querySelector('#checkLetter').onclick=()=>feedback('#letterFeedback',document.querySelector('#letterAnswer').value===letterRound);
+document.querySelector('#listenWord').onclick=()=>speak(wordRound[1], 0.8);
+document.querySelector('#newWord').onclick=newWord;
+document.querySelector('#checkInitial').onclick=()=>feedback('#initialFeedback',document.querySelector('#initialAnswer').value===wordRound[0]);
+
+let spellingRound;
+function newSpelling(){spellingRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#spellingInput').value='';document.querySelector('#spellingFeedback').textContent=''}
+document.querySelector('#listenSpelling').onclick=()=>speak(spellingRound[1], 0.75);
+document.querySelector('#checkSpelling').onclick=()=>feedback('#spellingFeedback',document.querySelector('#spellingInput').value.trim().toLowerCase()===spellingRound[1]);
+
 newLetter();newWord();newSpelling();
+
 /* ---------- Melody engine (Web Audio) ---------- */
 let audioCtx=null;
 function getAudio(){
@@ -187,7 +267,7 @@ function playNote(freq,durSec){
   const t=ctx.currentTime;
   const osc=ctx.createOscillator();
   const gain=ctx.createGain();
-  osc.type='triangle';                       // softer than sawtooth
+  osc.type='triangle';
   osc.frequency.value=freq;
   gain.gain.setValueAtTime(0,t);
   gain.gain.linearRampToValueAtTime(0.13,t+0.02);
@@ -196,38 +276,25 @@ function playNote(freq,durSec){
   osc.start(t); osc.stop(t+durSec+0.05);
 }
 const N={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00};
-/* one entry per μέρος, parallel to chantLines[].letters
-   [frequency, beats] — last note of each phrase is held (2 beats) */
 const melodies=[
-  // Μέρος 1 — A B C D E F G : "Twin-kle twin-kle lit-tle star"
   [[N.C,1],[N.C,1],[N.G,1],[N.G,1],[N.A,1],[N.A,1],[N.G,2]],
-
-  // Μέρος 2 — H I J K | L M N O P : "How I won-der | what you are, up a-"
   [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
    [N.D,1],[N.D,1],[N.C,1],[N.G,1],[N.G,1]],
-
-  // Μέρος 3 — Q R S T U V | W X Y Z : "How I won-der what you are | up a-bove..."
   [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
    [N.D,1],[N.D,2],
    [N.G,1],[N.G,1],[N.F,1],[N.E,2]]
 ];
 const melodyEnabled=()=>{const c=document.querySelector('#melodyOn');return c&&c.checked};
+
 /* ---------- 6. Alphabet chant (3 parts) ---------- */
 const chantLines=[
   {title:'Μέρος 1', letters:['A','B','C','D','E','F','G']},
-  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P'], breath:3},  // παύση μετά το K
-  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5} // παύση μετά το V
+  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P'], breath:3},
+  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5}
 ];
 
-function speakNow(text,rate,pitch){
-  if(!('speechSynthesis' in window)) return;
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='en-US'; u.rate=rate; u.pitch=pitch||1;
-  speechSynthesis.speak(u);
-}
 function flash(el){el.classList.add('on');setTimeout(()=>el.classList.remove('on'),600)}
 
-/* build the three cards */
 const chantWrap=document.querySelector('#chantLines');
 chantLines.forEach((line,li)=>{
   const card=document.createElement('div'); card.className='chantline';
@@ -256,10 +323,9 @@ chantLines.forEach((line,li)=>{
   chantWrap.appendChild(card);
 });
 
-/* player */
 let chantToken=0, chantTimer=null;
 const chantRate=()=>parseFloat(document.querySelector('#chantRate').value)||0.85;
-const beat=()=>720/chantRate();          // ms per γράμμα
+const beat=()=>720/chantRate();
 
 function stopChant(){
   chantToken++;
@@ -278,7 +344,7 @@ function playLine(li,token,done){
   let i=0;
   (function step(){
     if(token!==chantToken) return;
-    if(i>=line.letters.length){                    // τέλος γραμμής → ανάσα
+    if(i>=line.letters.length){
       chantTimer=setTimeout(()=>{if(token===chantToken&&done) done();}, beat()*1.6);
       return;
     }
@@ -287,11 +353,11 @@ function playLine(li,token,done){
     const beats=note[1];
 
     highlight(li,i);
-    speakNow(name, chantRate(), 1.15);
+    speakNow(name, chantRate(), 1.15);          // ← now uses the chosen voice
     if(melodyEnabled()) playNote(note[0], beats*beat()/1000);
 
-    const long=name.length>=5;                     // "aitch","double you"
-    const minGap=long?beat()*1.2:0;                // give the voice time
+    const long=name.length>=5;
+    const minGap=long?beat()*1.2:0;
     const gap=Math.max(beat()*beats,minGap)*(line.breath===i?1.4:1);
 
     i++;
@@ -299,7 +365,7 @@ function playLine(li,token,done){
   })();
 }
 function playLines(list){
-  const token=chantToken;                             // μετά το stopChant()
+  const token=chantToken;
   let n=0;
   (function nextLine(){
     if(token!==chantToken||n>=list.length) return;
@@ -308,23 +374,6 @@ function playLines(list){
 }
 document.querySelector('#chantAll').onclick=()=>{stopChant(); playLines([0,1,2]);};
 document.querySelector('#chantStop').onclick=stopChant;
-function fillVoicePicker(){
-  var sel = document.getElementById("voiceSel");
-  if (!sel || !VOICES.length) return;
-  sel.innerHTML = "";
-  VOICES.forEach(function(v){
-    var o = document.createElement("option");
-    o.value = v.name;
-    o.textContent = v.name + " (" + v.lang + ")";
-    sel.appendChild(o);
-  });
-  if (CHOSEN) sel.value = CHOSEN;
-}
-
-function pickVoice(name){
-  CHOSEN = name || null;
-  try { if (name) localStorage.setItem("lumo-voice", name); } catch(e) {}
-}
 </script>
 </body>
 </html>
