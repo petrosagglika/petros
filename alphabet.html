@@ -76,6 +76,69 @@ label.mel{display:inline-flex;align-items:center;gap:4px;color:var(--purple);fon
 </div>
 
 <script>
+var VOICES = [];            // available English voices
+var CHOSEN = null;          // user-selected voice (persisted)
+
+function loadVoices(){
+  if (!window.speechSynthesis) return;
+  VOICES = speechSynthesis.getVoices().filter(function(v){
+    return /^en([-_]|$)/i.test(v.lang);           // all English voices
+  });
+  try { CHOSEN = localStorage.getItem("lumo-voice"); } catch(e) {}
+  if (CHOSEN && !VOICES.some(function(v){ return v.name === CHOSEN; })) CHOSEN = null;
+}
+
+/* speak: pick voice each time (voice list may arrive late on iOS) */
+function speak(text){
+  if (!window.speechSynthesis || !text) return;
+  text = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "");
+  if (!text) return;
+  speechSynthesis.cancel();
+
+  var voices = VOICES.length ? VOICES : (loadVoices(), VOICES);
+  var chosen = null;
+
+  if (CHOSEN) {
+    voices.forEach(function(v){ if (v.name === CHOSEN) chosen = v; });
+  }
+  if (!chosen) {
+    /* preference order: natural-quality voices first */
+    var prefs = [/Google UK English Female/i, /Google US English/i, /Premium/i, /Enhanced/i,
+                 /Siri/i, /Samantha/i, /Karen/i, /Moira/i, /Daniel/i];
+    for (var i = 0; i < prefs.length && !chosen; i++) {
+      voices.forEach(function(v){ if (!chosen && v.name.match(prefs[i])) chosen = v; });
+    }
+    if (!chosen) chosen = voices.find(function(v){ return v.lang.toLowerCase() === "en-us"; }) || voices[0];
+  }
+
+  var u = new SpeechSynthesisUtterance(text);
+  if (chosen) u.voice = chosen;
+  u.lang = chosen ? chosen.lang : "en-US";
+  u.rate = 0.85;
+  speechSynthesis.speak(u);
+}
+
+/* voices load asynchronously in Safari — listen for them */
+if (window.speechSynthesis) {
+  speechSynthesis.addEventListener("voiceschanged", function(){ loadVoices(); fillVoicePicker(); });
+  loadVoices();
+  fillVoicePicker();   // in case the list was already loaded
+}
+/* 🔊 buttons on every example sentence (skips the Greek line and the button itself) */
+document.querySelectorAll("p.sent").forEach(function(p){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "spk";
+  b.textContent = "🔊";
+  b.title = "Listen / Άκου";
+  b.addEventListener("click", function(){
+    var clone = p.cloneNode(true);
+    clone.querySelectorAll(".gr").forEach(function(g){ g.remove(); });
+    clone.querySelectorAll(".spk").forEach(function(s){ s.remove(); });   /* <-- NEW: strip the speaker button */
+    speak(clone.textContent.replace(/^\s*\d+\./, "").replace(/\s+/g, " ").trim());
+  });
+  p.insertBefore(b, p.firstChild);
+});
 const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const words=[['A','apple','μήλο'],['B','builder','κτίστης'],['C','cement','τσιμέντο'],['D','door','πόρτα'],['E','evening','βράδυ'],['F','flower','λουλούδι'],['G','garden','κήπος'],['H','hammer','σφυρί'],['I','inside','μέσα'],['J','job','δουλειά'],['K','key','κλειδί'],['L','ladder','σκάλα'],['M','more','περισσότερο'],['N','nail','καρφί'],['O','old','παλιός'],['P','paint','βάφω/χρώμα'],['Q','question','ερώτηση'],['R','rake','τσουγκράνα'],['S','shovel','φτυάρι'],['T','tree','δέντρο'],['U','under','κάτω από'],['V','van','βαν'],['W','work','δουλειά'],['X','box','κουτί'],['Y','you','εσύ'],['Z','zero','μηδέν']];
 function speak(text){if(!('speechSynthesis' in window)){alert('Η φωνή δεν είναι διαθέσιμη σε αυτό το browser.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.72;speechSynthesis.speak(u)}
