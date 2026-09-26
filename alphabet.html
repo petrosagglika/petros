@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alphabet — Αγγλικό αλφάβητο</title>
+<style>
+.letter{cursor:pointer}
+.letter:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+/* --- 6. Alphabet chant --- */
+.chantline{background:#fff;border:1px solid #e2ddf2;border-radius:8px;padding:10px 12px;margin:10px 0}
+.chanthead{display:flex;align-items:center;gap:10px;color:var(--purple);font-weight:bold;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:40px;padding:0 6px;
+      border-radius:8px;background:#f0ebff;color:var(--purple);font-weight:bold;font-size:21px;
+      cursor:pointer;user-select:none;transition:transform .12s,background .12s,color .12s}
+.chip.gap{margin-right:16px}          /* η παύση μετά το V */
+.chip.on{background:var(--pink);color:#fff;transform:scale(1.2)}
+.chip:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+button.action.small{padding:4px 10px;font-size:15px;line-height:1}
+/* --- melody toggle --- */
+#melodyOn{accent-color:var(--purple);width:19px;height:19px;vertical-align:-3px;margin-right:5px}
+label.mel{display:inline-flex;align-items:center;gap:4px;color:var(--purple);font-weight:bold;cursor:pointer}
+:root{--purple:#5b21b6;--blue:#2563eb;--teal:#0d9488;--pink:#db2777;--bg:#faf9fd}
+*{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin-inline:auto;background:var(--bg);color:#222;font:18px/1.55 Georgia,serif}h1{color:var(--purple);text-align:center}h2{color:#fff;background:var(--purple);padding:8px 12px;border-radius:7px;margin-top:28px}.gr{color:#777;font-style:italic}.intro{background:#ece7fa;padding:12px;border-radius:8px}.alphabet{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:14px 0}.letter{background:#fff;border:1px solid #c9c2e8;border-radius:8px;padding:10px;text-align:left;cursor:pointer}.letter:hover,.letter:focus{background:#f0ebff;border-color:var(--purple)}.letter strong{display:block;color:var(--purple);font-size:28px;line-height:1}.letter small{display:block;color:#555}.speak{float:right;border:0;background:var(--purple);color:#fff;border-radius:50%;width:34px;height:34px;padding:0;cursor:pointer}.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.wordcard{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px}.wordcard b{color:var(--blue)}table{border-collapse:collapse;width:100%;margin:12px 0;background:#fff}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f2fb}.exbox{background:#fff;border:1px solid #e2ddf2;border-radius:8px;padding:14px;margin:14px 0}select,input{font:inherit;padding:6px;border:1px solid #9792c4;border-radius:6px;max-width:100%}button.action{background:var(--purple);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}.feedback{font-weight:bold;margin-left:8px}.ok{color:#15803d}.no{color:#b91c1c}.listen-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}@media(max-width:600px){body{font-size:19px;padding:14px}th,td{font-size:16px}.letter{min-height:88px}}
+</style>
+</head>
+<body>
+  <div style="margin-top:10px; text-align:center;">
+    <label for="voiceSel" style="font-size:14px; color:#555;">🗣 Voice:</label>
+    <select id="voiceSel" onchange="pickVoice(this.value)"><option>Φoρτώνει Πέτρο μου...</option></select>
+  </div>
+<h1>🔤 Το αγγλικό αλφάβητο — The English Alphabet</h1>
+<p class="intro"><b>Πάτα το ηχείο</b> για να ακούσεις το γράμμα ή τη λέξη. Μετά κάνε τις ασκήσεις.</p>
+
+<h2>1. Τα 26 γράμματα — The 26 letters</h2>
+<div id="alphabet" class="alphabet"></div>
+<p class="gr">Παράδειγμα: A λέγεται «έι», B «μπι», C «σι». Πάτησε κάθε κάρτα για να ακούσεις.</p>
+
+<h2>2. Το τραγούδι — The alphabet chant</h2>
+<div class="exbox">
+  <p>Το αλφάβητο τραγουδιέται σε <b>τρία μέρη</b>. Πάτα ▶️ και τραγούδα μαζί.
+     Ο σκοπός είναι του <i>Twinkle, Twinkle, Little Star</i>.</p>
+  <div id="chantLines"></div>
+  <p class="listen-line">
+    <button class="action" id="chantAll">▶️ Και τα τρία μέρη</button>
+    <button class="action" id="chantStop">⏹ Στοπ</button>
+    <label class="gr">Ταχύτητα <input type="range" id="chantRate" min="0.5" max="1.2" step="0.05" value="0.85"></label>
+    <label class="mel"><input type="checkbox" id="melodyOn" checked> 🎵 Μελωδία</label>
+  </p>
+  <p class="gr">Πάτα ένα γράμμα για να το ακούσεις μόνο του.</p>
+</div>
+
+<h2>3. Γράμμα και λέξη — Letter and word</h2>
+<div id="wordCards" class="cardgrid"></div>
+
+<h2>4. Άσκηση Α — Άκου και διάλεξε το γράμμα</h2>
+<div class="exbox">
+  <p>Πάτησε <b>Listen</b>. Ποιο γράμμα ακούς;</p>
+  <p class="listen-line"><button class="action" id="listenLetter">🔊 Listen</button><select id="letterAnswer"><option value="">— choose —</option></select><button class="action" id="checkLetter">Check</button><span id="letterFeedback" class="feedback"></span></p>
+  <p class="gr">Συμβουλή: Άκου ξανά όσες φορές θέλεις.</p>
+</div>
+
+<h2>5. Άσκηση Β — Ποιο γράμμα λείπει;</h2>
+<div class="exbox">
+  <p>Ποιο γράμμα αρχίζει τη λέξη <b id="targetWord">garden</b>;</p>
+  <p><select id="initialAnswer"><option value="">— choose —</option></select><button class="action" id="checkInitial">Check</button><span id="initialFeedback" class="feedback"></span></p>
+  <button class="action" id="listenWord">🔊 Άκου τη λέξη</button> <button class="action" id="newWord">New word</button>
+</div>
+
+<h2>6. Άσκηση Γ — Γράψε τη λέξη</h2>
+<div class="exbox">
+  <p>Άκου τη λέξη και γράψε την:</p>
+  <p><button class="action" id="listenSpelling">🔊 Listen</button> <input id="spellingInput" autocomplete="off" placeholder="type the word"><button class="action" id="checkSpelling">Check</button><span id="spellingFeedback" class="feedback"></span></p>
+  <p class="gr">Παραδείγματα: garden, hammer, shovel, work.</p>
+</div>
+
+<script>
+/* =====================================================================
+   VOICE SYSTEM  (single source of truth)
+   ===================================================================== */
+var VOICES = [];            // available English voices
+var CHOSEN = null;          // user-selected voice name (persisted)
+
+function loadVoices(){
+  if (!window.speechSynthesis) return;
+  VOICES = speechSynthesis.getVoices().filter(function(v){
+    return /^en([-_]|$)/i.test(v.lang);           // all English voices
+  });
+  try {
+    var saved = localStorage.getItem("lumo-voice");
+    if (saved) CHOSEN = saved;
+  } catch(e) {}
+  // drop a saved voice that no longer exists
+  if (CHOSEN && VOICES.length && !VOICES.some(function(v){ return v.name === CHOSEN; })) CHOSEN = null;
+}
+
+/* called from the <select onchange="pickVoice(this.value)"> */
+function pickVoice(name){
+  CHOSEN = name || null;
+  try {
+    if (name) localStorage.setItem("lumo-voice", name);
+    else localStorage.removeItem("lumo-voice");
+  } catch(e) {}
+  // small confirmation so the user hears the new voice immediately
+  speak("Hello", 0.85);
+}
+
+/* resolve the SpeechSynthesisVoice object for CHOSEN (or a good default) */
+function getVoice(){
+  var voices = VOICES.length ? VOICES : (loadVoices(), VOICES);
+  if (!voices.length) return null;
+
+  if (CHOSEN) {
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].name === CHOSEN) return voices[i];
+    }
+  }
+  /* preference order: natural-quality voices first */
+  var prefs = [/Google UK English Female/i, /Google US English/i, /Premium/i, /Enhanced/i,
+               /Siri/i, /Samantha/i, /Karen/i, /Moira/i, /Daniel/i];
+  for (var p = 0; p < prefs.length; p++) {
+    for (var j = 0; j < voices.length; j++) {
+      if (prefs[p].test(voices[j].name)) return voices[j];
+    }
+  }
+  for (var k = 0; k < voices.length; k++) {
+    if (voices[k].lang.toLowerCase() === "en-us") return voices[k];
+  }
+  return voices[0];
+}
+
+/* build an utterance that always carries the chosen voice */
+function makeUtterance(text, rate, pitch){
+  var u = new SpeechSynthesisUtterance(text);
+  var v = getVoice();
+  if (v) { u.voice = v; u.lang = v.lang; }
+  else   { u.lang = "en-US"; }
+  u.rate  = (rate  || 0.85);
+  u.pitch = (pitch || 1);
+  return u;
+}
+
+/* normal speak: cancels whatever is playing */
+function speak(text, rate, pitch){
+  if (!window.speechSynthesis || !text) return;
+  text = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "");
+  if (!text.trim()) return;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(makeUtterance(text, rate, pitch));
+}
+
+/* queued speak: does NOT cancel (used by the chant) */
+function speakNow(text, rate, pitch){
+  if (!window.speechSynthesis || !text) return;
+  speechSynthesis.speak(makeUtterance(text, rate, pitch));
+}
+
+/* voices load asynchronously in Safari — listen for them */
+if (window.speechSynthesis) {
+  speechSynthesis.addEventListener("voiceschanged", function(){ loadVoices(); fillVoicePicker(); });
+  loadVoices();
+  fillVoicePicker();   // in case the list was already loaded
+}
+
+function fillVoicePicker(){
+  var sel = document.getElementById("voiceSel");
+  if (!sel || !VOICES.length) return;
+  sel.innerHTML = "";
+  VOICES.forEach(function(v){
+    var o = document.createElement("option");
+    o.value = v.name;
+    o.textContent = v.name + " (" + v.lang + ")";
+    sel.appendChild(o);
+  });
+  if (CHOSEN) sel.value = CHOSEN;
+  else if (getVoice()) { CHOSEN = getVoice().name; sel.value = CHOSEN; }
+}
+
+/* 🔊 buttons on every example sentence */
+document.querySelectorAll("p.sent").forEach(function(p){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "spk";
+  b.textContent = "🔊";
+  b.title = "Listen / Άκου";
+  b.addEventListener("click", function(){
+    var clone = p.cloneNode(true);
+    clone.querySelectorAll(".gr").forEach(function(g){ g.remove(); });
+    clone.querySelectorAll(".spk").forEach(function(s){ s.remove(); });
+    speak(clone.textContent.replace(/^\s*\d+\./, "").replace(/\s+/g, " ").trim());
+  });
+  p.insertBefore(b, p.firstChild);
+});
+
+/* =====================================================================
+   LETTERS / WORDS
+   ===================================================================== */
+const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const words=[['A','apple','μήλο'],['B','builder','κτίστης'],['C','cement','τσιμέντο'],['D','door','πόρτα'],['E','evening','βράδυ'],['F','flower','λουλούδι'],['G','garden','κήπος'],['H','hammer','σφυρί'],['I','inside','μέσα'],['J','job','δουλειά'],['K','key','κλειδί'],['L','ladder','σκάλα'],['M','more','περισσότερο'],['N','nail','καρφί'],['O','old','παλιός'],['P','paint','βάφω/χρώμα'],['Q','question','ερώτηση'],['R','rake','τσουγκράνα'],['S','shovel','φτυάρι'],['T','tree','δέντρο'],['U','under','κάτω από'],['V','van','βαν'],['W','work','δουλειά'],['X','box','κουτί'],['Y','you','εσύ'],['Z','zero','μηδέν']];
+
+const letterNames={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',
+I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'are',
+S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
+
+function speakLetter(l){ speak(letterNames[l], 0.75); }
+
+const alphabet=document.querySelector('#alphabet');
+letters.forEach(l=>{
+  const d=document.createElement('div');
+  d.className='letter';
+  d.tabIndex=0;
+  d.setAttribute('role','button');
+  d.setAttribute('aria-label','Listen to '+l);
+  d.innerHTML='<strong>'+l+' '+l.toLowerCase()+'</strong>'+
+              '<small>Listen to '+l+'</small>'+
+              '<button class="speak" aria-label="Listen to '+l+'">🔊</button>';
+  d.addEventListener('click',()=>speakLetter(l));
+  d.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();speakLetter(l)}
+  });
+  alphabet.appendChild(d);
+});
+
+const cards=document.querySelector('#wordCards');
+words.forEach(([l,w,g])=>{
+  const d=document.createElement('div');
+  d.className='wordcard';
+  d.innerHTML='<b>'+l+' '+l.toLowerCase()+'</b> — '+w+'<br><span class="gr">'+g+'</span> <button class="speak" aria-label="Listen to '+w+'">🔊</button>';
+  d.querySelector('button').onclick=()=>speak(w, 0.8);
+  cards.appendChild(d);
+});
+
+function fillSelect(sel,items){items.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;sel.appendChild(o)})}
+fillSelect(document.querySelector('#letterAnswer'),letters);
+fillSelect(document.querySelector('#initialAnswer'),letters);
+
+let letterRound,wordRound;
+function newLetter(){letterRound=letters[Math.floor(Math.random()*letters.length)];document.querySelector('#letterAnswer').value='';document.querySelector('#letterFeedback').textContent=''}
+function newWord(){wordRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#targetWord').textContent=wordRound[1];document.querySelector('#initialAnswer').value='';document.querySelector('#initialFeedback').textContent=''}
+function feedback(id,ok){const e=document.querySelector(id);e.textContent=ok?'✓ Μπράβο!':'✗ Ξαναπροσπάθησε.';e.className='feedback '+(ok?'ok':'no')}
+
+document.querySelector('#listenLetter').onclick=()=>speak(letterNames[letterRound], 0.75);
+document.querySelector('#checkLetter').onclick=()=>feedback('#letterFeedback',document.querySelector('#letterAnswer').value===letterRound);
+document.querySelector('#listenWord').onclick=()=>speak(wordRound[1], 0.8);
+document.querySelector('#newWord').onclick=newWord;
+document.querySelector('#checkInitial').onclick=()=>feedback('#initialFeedback',document.querySelector('#initialAnswer').value===wordRound[0]);
+
+let spellingRound;
+function newSpelling(){spellingRound=words[Math.floor(Math.random()*words.length)];document.querySelector('#spellingInput').value='';document.querySelector('#spellingFeedback').textContent=''}
+document.querySelector('#listenSpelling').onclick=()=>speak(spellingRound[1], 0.75);
+document.querySelector('#checkSpelling').onclick=()=>feedback('#spellingFeedback',document.querySelector('#spellingInput').value.trim().toLowerCase()===spellingRound[1]);
+
+newLetter();newWord();newSpelling();
+
+/* ---------- Melody engine (Web Audio) ---------- */
+let audioCtx=null;
+function getAudio(){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC) return null;
+  if(!audioCtx) audioCtx=new AC();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playNote(freq,durSec){
+  const ctx=getAudio(); if(!ctx) return;
+  const t=ctx.currentTime;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type='triangle';
+  osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0,t);
+  gain.gain.linearRampToValueAtTime(0.13,t+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+durSec);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t+durSec+0.05);
+}
+const N={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00};
+const melodies=[
+  [[N.C,1],[N.C,1],[N.G,1],[N.G,1],[N.A,1],[N.A,1],[N.G,2]],
+  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
+   [N.D,1],[N.D,1],[N.C,1],[N.G,1],[N.G,1]],
+  [[N.F,1],[N.F,1],[N.E,1],[N.E,1],
+   [N.D,1],[N.D,2],
+   [N.G,1],[N.G,1],[N.F,1],[N.E,2]]
+];
+const melodyEnabled=()=>{const c=document.querySelector('#melodyOn');return c&&c.checked};
+
+/* ---------- 6. Alphabet chant (3 parts) ---------- */
+const chantLines=[
+  {title:'Μέρος 1', letters:['A','B','C','D','E','F','G']},
+  {title:'Μέρος 2', letters:['H','I','J','K','L','M','N','O','P'], breath:3},
+  {title:'Μέρος 3', letters:['Q','R','S','T','U','V','W','X','Y','Z'], breath:5}
+];
+
+function flash(el){el.classList.add('on');setTimeout(()=>el.classList.remove('on'),600)}
+
+const chantWrap=document.querySelector('#chantLines');
+chantLines.forEach((line,li)=>{
+  const card=document.createElement('div'); card.className='chantline';
+
+  const head=document.createElement('div'); head.className='chanthead';
+  head.innerHTML='<span>'+line.title+' — '+line.letters.length+' γράμματα</span>';
+  const pb=document.createElement('button');
+  pb.className='action small'; pb.textContent='▶️';
+  pb.setAttribute('aria-label','Play '+line.title);
+  pb.onclick=()=>{stopChant(); playLines([li]);};
+  head.appendChild(pb);
+
+  const chips=document.createElement('div'); chips.className='chips';
+  line.letters.forEach((L,i)=>{
+    const c=document.createElement('span');
+    c.className='chip'+(i===line.breath?' gap':'');
+    c.dataset.line=li; c.dataset.i=i; c.textContent=L;
+    c.tabIndex=0; c.setAttribute('role','button');
+    c.setAttribute('aria-label','Listen to '+L);
+    c.onclick=()=>{stopChant(); flash(c); speakLetter(L);};
+    c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault(); c.click();}};
+    chips.appendChild(c);
+  });
+
+  card.appendChild(head); card.appendChild(chips);
+  chantWrap.appendChild(card);
+});
+
+let chantToken=0, chantTimer=null;
+const chantRate=()=>parseFloat(document.querySelector('#chantRate').value)||0.85;
+const beat=()=>720/chantRate();
+
+function stopChant(){
+  chantToken++;
+  clearTimeout(chantTimer);
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+}
+function highlight(li,i){
+  document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+  const c=document.querySelector('.chip[data-line="'+li+'"][data-i="'+i+'"]');
+  if(c) c.classList.add('on');
+}
+function playLine(li,token,done){
+  const line=chantLines[li];
+  const melody=melodies[li];
+  let i=0;
+  (function step(){
+    if(token!==chantToken) return;
+    if(i>=line.letters.length){
+      chantTimer=setTimeout(()=>{if(token===chantToken&&done) done();}, beat()*1.6);
+      return;
+    }
+    const L=line.letters[i], name=letterNames[L];
+    const note=(melody&&melody[i])?melody[i]:[N.C,1];
+    const beats=note[1];
+
+    highlight(li,i);
+    speakNow(name, chantRate(), 1.15);          // ← now uses the chosen voice
+    if(melodyEnabled()) playNote(note[0], beats*beat()/1000);
+
+    const long=name.length>=5;
+    const minGap=long?beat()*1.2:0;
+    const gap=Math.max(beat()*beats,minGap)*(line.breath===i?1.4:1);
+
+    i++;
+    chantTimer=setTimeout(step,gap);
+  })();
+}
+function playLines(list){
+  const token=chantToken;
+  let n=0;
+  (function nextLine(){
+    if(token!==chantToken||n>=list.length) return;
+    playLine(list[n++],token,nextLine);
+  })();
+}
+document.querySelector('#chantAll').onclick=()=>{stopChant(); playLines([0,1,2]);};
+document.querySelector('#chantStop').onclick=stopChant;
+</script>
+</body>
+</html>
