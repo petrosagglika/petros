@@ -35,6 +35,21 @@
       row.appendChild(cell);
       body.appendChild(row);
     });
+/* --- cross-links: any element with data-goto="N" jumps to page N --- */
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-goto]');
+  if (!t) return;
+  e.preventDefault();                       // stop ancestor <a> from firing
+  var i = parseInt(t.getAttribute('data-goto'), 10);
+  if (isNaN(i)) return;
+  var target = document.querySelectorAll('#pager .page')[i];
+  if (!target) return;
+  pager.style.scrollSnapType = 'none';
+  pager.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+  window.setTimeout(function () {
+    pager.style.scrollSnapType = 'x mandatory';
+  }, 700);
+});
 
     table.appendChild(body);
     holder.appendChild(table);
